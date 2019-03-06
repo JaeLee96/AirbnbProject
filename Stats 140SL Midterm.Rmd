@@ -1,0 +1,65 @@
+---
+title: |
+    | Stats 140SL Midterm
+    | Student ID: 004950987
+author: "Jaehyeong Lee"
+date: "October 31, 2018"
+output: pdf_document
+---
+
+The data are student records for English as a Second Language classes offered at UCLA. We have been asked to use the data to examine student grade performance. Specifically:
+
+1. Provide a demographic profile of all the students in Fall 2017.
+
+```{r}
+library(openxlsx)
+library(dplyr)
+library(ggplot2)
+
+grade_data <- read.xlsx('C:/Users/lawye/Downloads/GradeData2017Fall.xlsx', colNames = TRUE)
+enrollment_data <- read.xlsx('C:/Users/lawye/Downloads/Enrollment2017Fall.xlsx', colNames = TRUE)
+
+head(enrollment_data)
+
+enrollment_data$Age <- as.numeric(enrollment_data$Age)
+nrow(enrollment_data)
+summary(enrollment_data$Age)
+
+prop.table(table(enrollment_data$Gender))
+length(unique(enrollment_data$Country.of.Citizenship))
+sort(prop.table(table(enrollment_data$Country.of.Citizenship)))
+
+```
+
+All the 196 students in Fall 2017 that are enrolled in UCLA ESL classes are at least 18 years old or above and are on average, around 25 years old. There are some few older students as up to 54 years old. About 52% of students are male and 46% of students are female. They are from 27 different countries such as: China, Iran, Japan, and etcetera. Most significantly represented five countries are China (22%), Japan (15%), Saudi Arabia (12%), Kuwait(12%), and Kazakhstan (9%).   
+
+
+2. Please create a graphic/visualization which reveals the association between student grade performance and the other variable(s) in the data.
+
+```{r}
+
+merged_data <- merge(grade_data, enrollment_data, by.y = 'STUDENT.ID')
+
+merged_data$GRADE <- factor(merged_data$GRADE)
+merged_data$COURSE.TITLE <- factor(merged_data$COURSE.TITLE)
+merged_data$CITIZENSHIP <- factor(merged_data$CITIZENSHIP)
+
+names(merged_data)
+plot(Score~GRADE, merged_data)
+plot(as.numeric(COURSE.TITLE)~GRADE, merged_data)
+plot(Grammar.Writing.Level~GRADE, merged_data)
+
+
+```
+
+
+It is evidently clear that students' grades are affected by different course levels. In higher-level courses lower grades are more distributed. However there seems to be not significant relationship between score on English placement test and students' grades
+
+3. If you were to attempt to model student grades as a dependent variable please describe the process and set up a model. If you have time to actually estimate a model, please do so and provide an interpretation of the results.
+
+In order to model student grades against other variables, I would thoroughly check the data and ensure that if there are any anomaly values or NA values that might potentially affect their true relationship. Then I would check if these values are removeable by graphically visualizing how much they affect the student grades and whether or not their relationships are significant. After, I would pick few variables such as gender and age intervals as blocks to minimize the correlation between variables and check if critical assumptions such as non-constant variance and random errors within each block are met. Then I would perform linear model using Generalized Least Squares (GLS) and extract ANOVA on student grades against significant variables such as reading discussion level, reading writing level, and  listening/speaking/pronunciation level to obtain p-value to determine the significance between student grades and other variables.   
+
+```{r}
+
+```
+

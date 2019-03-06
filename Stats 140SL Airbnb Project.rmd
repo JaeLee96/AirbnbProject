@@ -1,0 +1,134 @@
+---
+title: "Stats 140SL Airbnb Project"
+author: "Jaehyeong Lee"
+date: "December 1, 2018"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+# Importing Dataset
+
+listing <- read.csv("C:/Users/lawye/Downloads/listings.csv", header = T)
+calendar <- read.csv("C:/Users/lawye/Downloads/calendar.csv", header = T)
+```
+
+
+```{r}
+model <- lm(price ~ room_type+minimum_nights+number_of_reviews+reviews_per_month+calculated_host_listings_count+availability_365, data = listing)
+summary(model)
+```
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+attach(listing)
+
+# Price distribution by different types of a room
+head(listing)
+ggplot(listing, aes(x=price, fill=room_type)) + geom_density(alpha=0.5) + labs(x="Room Price",y="Density") + scale_fill_discrete(name = "Room Type") +ggtitle("Airbnb Room Price Distribution") + theme(plot.title = element_text(hjust = 0.5)) + xlim(c(0,500))
+
+```
+
+
+
+```{r}
+library(leaflet)
+
+# Geographical mapping of Airbnb dataset
+
+airbnb_map <- leaflet(listing) %>% addTiles(attribution='Airbnb Dataset') %>% addMarkers(~longitude, ~latitude, popup = ~as.character(price), label = ~as.character(name), clusterOptions = markerClusterOptions())
+airbnb_map
+
+```
+
+
+
+```{r}
+# Determine whether there is significant difference in room price between the rooms in Santa Catalina Island and the rooms outside of an island
+
+indices <- grepl('two harbors|avalon|catalina', neighbourhood, ignore.case = T)
+listing$Catalina <- ifelse(indices, 'Yes', 'No')
+
+ggplot(aes(x=Catalina, y=price, fill=Catalina), data = listing) + geom_boxplot() +
+  ylim(c(0,500)) + xlab("Santa Catalina Island") + ggtitle("Room Price in Catalina Island") + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_discrete(name = "IslandOrNot")
+
+listing %>% group_by(Catalina) %>% summarise(AvgPrice = mean(price))
+
+ggplot(listing, aes(x=price, fill=Catalina)) + geom_density(alpha=0.5) + labs(x="Room Price",y="Density") + scale_fill_discrete(name = "Catalina Island") +ggtitle("Airbnb Room Price Distribution") + theme(plot.title = element_text(hjust = 0.5)) + xlim(c(0,1000))
+
+```
+
+
+
+```{r}
+# Determine if Airbnb rooms near beach are generally more expensive than those that are distant from beach
+
+indices2 <- grepl('beach', name, ignore.case = T)
+listing$Beach <- ifelse(indices2, 'Yes', 'No')
+
+ggplot(aes(x=Beach, y=price, fill=Beach), data = listing) + geom_boxplot() +
+  ylim(c(0,500)) + xlab("Beach") + ggtitle("Room Price By Beach") + theme(plot.title = element_text(hjust = 0.5)) + scale_fill_discrete(name = "BeachOrNot")
+
+listing %>% group_by(Beach) %>% summarise(AvgPrice = mean(price))
+```
+
+
+
+```{r}
+# Divide Airbnb room availability into 5 different categorical variables and determine how much they affect
+# the room price
+
+listing$Availability <- cut(availability_365, breaks=c(0,20,72,146,220,294,365), labels = c("0-20", "21-72","73-146","147-220","221-294","295-365"))
+table(listing$Availability, exclude = NULL)
+
+new_list <- listing %>% group_by(Availability, Beach) %>% summarise(AvgPrice = floor(mean(price)))
+new_list <- new_list[1:(nrow(new_list)-2),]
+
+p <- ggplot(new_list, aes(x = Availability, y = AvgPrice)) +
+  geom_bar(
+    aes(color = Beach, fill = Beach),
+    stat = "identity", position = position_dodge(0.8),
+    width = 0.7
+    ) +
+  scale_color_manual(values = c("#0073C2FF", "#EFC000FF")) +
+  scale_fill_manual(values = c("#0073C2FF", "#EFC000FF")) + ylim(c(0,400)) + ggtitle("Airbnb Room Price By Availability and Beach") + theme(plot.title = element_text(hjust = 0.5))
+
+p + geom_text(
+  aes(label = AvgPrice, group = Beach), 
+  position = position_dodge(0.8),
+  vjust = -0.3, size = 3.5
+)
+
+```
+
+
+```{r}
+
+# Measure how price of Airbnb rooms in Catalina islands are affected by availability
+
+listing$Availability <- cut(availability_365, breaks=c(0,72,146,220,300,330,365), labels = c("0-72","73-146","147-220","221-300","301-330","331-365"))
+table(listing$Availability, exclude = NULL)
+
+new_list2 <- listing %>% group_by(Availability, Catalina) %>% summarise(AvgPrice = floor(mean(price)))
+new_list2 <- new_list2[1:(nrow(new_list2)-2),]
+
+p2 <- ggplot(new_list2, aes(x = Availability, y = AvgPrice)) +
+  geom_bar(
+    aes(color = Catalina, fill = Catalina),
+    stat = "identity", position = position_dodge(0.8),
+    width = 0.7
+    ) +
+  scale_color_manual(values = c("#0073C2FF", "#EFC000FF")) +
+  scale_fill_manual(values = c("#0073C2FF", "#EFC000FF")) + ylim(c(0,700)) + ggtitle("Airbnb Room Price By Availability and Catalina") + theme(plot.title = element_text(hjust = 0.5))
+
+p2 + geom_text(
+  aes(label = AvgPrice, group = Catalina), 
+  position = position_dodge(0.8),
+  vjust = -0.8, size = 3.5
+)
+
+```
+
